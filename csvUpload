@@ -1,0 +1,105 @@
+<?php
+//jedenfalls
+//21-02-2013
+//upload CA from spreadsheet
+
+  include 'connect.php';
+  //check if ca exists
+  //update from ca view
+  //convert to 2 decimal places
+  //it might be possible to upload CA from previous years, year in question would be specified in the url
+  if(isset($_GET['year'])){$year = $_GET['year'];}else $year = date('Y');
+  if(isset($_POST['submit'])){
+  $module = $_POST['module'];
+     //move(upload) file
+     #####
+          //get data
+
+           $attachment = $_FILES['file'];
+           $attaname = $_FILES['file']['name'];
+           $tmpName  = $_FILES['file']['tmp_name'];
+           $attasize = $_FILES['file']['size'];
+           $attatype = $_FILES['file']['type'];
+           $atta_ext = strtolower(end(explode('.', $attaname)));
+           //$fullattaname = str_replace(" ","_",substr($attaname,0,70));
+           $fullattaname = './content/contass/'.$year.'_'.$module.".".$atta_ext;
+           $fp      = fopen($tmpName, 'r');
+           $content = fread($fp, filesize($tmpName));
+           $content = addslashes($content);
+
+           fclose($fp);
+
+               // don't overwrite an existing file
+                  $i = 0;
+                  $parts = pathinfo($fullattaname);
+
+                  while (file_exists($fullattaname)) {
+                      $i++;
+                      $fullattaname = './content/contass/'.$year.'_'.$module."_" . $i . "." . $atta_ext;
+                  }
+
+              move_uploaded_file($tmpName, $fullattaname);
+
+     #####
+
+        // Read file lines
+	$CAfile = $fullattaname;
+        $rows = file($CAfile);
+	//$data = array();
+	foreach($rows as $row)
+		$data[] = explode(',',trim($row));
+
+        print_r($data);
+        foreach($data as $key => $value){
+         $count = count($value);
+
+         if(isset($value[6])){
+           $final = $value[6]+$value[7];
+         if($value[6] > 0){
+
+            $upload = mysql_query("INSERT INTO contass (`id`,`studentid`,`quiz`,`MockExam`,`FieldTrip`,`Practical`,`Assign`,`TotalCA`,`final exam`,`final mark`,`module`,`year`)
+        VALUES ('','$value[0]','$value[1]','$value[2]','$value[3]','$value[4]','$value[5]','$value[6]','$value[7]','$final','$module','$year')");
+                       }               }
+                                        }     if($upload){echo "CA for ".$module." uploaded<p>";}  else echo "";
+    }
+
+  if(isset($_GET['md'])){$module = strtoupper($_GET['md']); }
+
+$check_upload = mysql_num_rows(mysql_query("SELECT * FROM contass WHERE `module`='$module' AND `year`='$year'"));
+
+  echo "
+  <form action='' method='POST'  enctype='multipart/form-data'>
+  <input type='file' name='file' size=30><br>
+  <input type='hidden' name='module' value='".$module."'><br>
+  <input type='checkbox' name='recall'>
+  <input type='submit' name='submit'>
+  </form>";
+
+if($check_upload>0){echo "<font color='green' ><strong>CA Available.</strong><p></font>";} else { echo "<font color='red' ><strong>CA pending.</strong><p></font>";  }
+#############
+
+$module_query = "SELECT * FROM modules WHERE `Programme`='3' OR `Programme`='2' OR `Programme`='1'";
+$queried_modules = mysql_query($module_query);
+$module_count = mysql_num_rows($queried_modules)-1;
+
+while($row = mysql_fetch_array($queried_modules)){
+
+$modno[] = $row[0];
+}
+
+  $leina = mysql_fetch_array(mysql_query("SELECT * FROM modules WHERE `Code`='$module' "));
+ $leina0 = $leina[1];
+
+$link1 = array_search($module,$modno)-1;
+$link2 = array_search($module,$modno)+1;
+if(isset($modno[$link1])){
+          $leina = mysql_fetch_array(mysql_query("SELECT * FROM modules WHERE `Code`='$modno[$link1]'"));
+  echo "<a href='?area=upload_CA&md=".$modno[0]."' title='1st'>&laquo; </a> |&nbsp;<a href='?area=upload_CA&md=".$modno[$link1]."' title='".$leina[1]."'>previous module </a>&nbsp;";}
+echo "<b>&nbsp;|&nbsp;".$leina0."&nbsp;|</b>";
+if(isset($modno[$link2])){
+$leina = mysql_fetch_array(mysql_query("SELECT * FROM modules WHERE `Code`='$modno[$link2]'"));
+  echo "&nbsp;<a href='?area=upload_CA&md=".$modno[$link2]."' title='".$leina[1]."'>next module </a> &nbsp;| ";
+echo "&nbsp;<a href='?area=upload_CA&md=".$modno[$module_count]."' title='last'>&raquo; </a>";  }
+
+echo "<p><a href='?area=modulelist'>module Index</a>";
+?>
