@@ -1,0 +1,53 @@
+    <?php
+//jedenfalls
+//content search for iwt mapping work
+//24 Jan 2022
+
+error_reporting(E_ALL);
+
+$as_sdtat = $_GET['t'];
+
+if (!file_exists('mined')) {
+    mkdir('mined', 0777, true);
+}
+
+$search = "mined/19165.html";
+
+if (!file_exists($search)) {
+    echo "<p>the file does not exist</p>";
+} else {
+    echo "<p>the file exists</p>";
+}
+
+$extracted_filex = file_get_contents($search);
+
+$exploded = explode('Latitude',$extracted_filex,10);
+
+foreach($exploded as $key => $value){
+
+  if($key>0){
+    $exploded2 = explode('Transit Type',$value);
+
+    $boleng = str_replace('</td><td class="col-value">','',$exploded2[0]);
+    $boleng = str_replace('Longitude',',',$boleng); 
+    $boleng = str_replace('</td></tr><tr class="row"><!----><td class="col-label">','',$boleng); 
+    
+    $pre[] = $boleng;
+   }
+}
+
+foreach($pre as $key2 => $value2){
+    echo htmlspecialchars($value2);
+    echo "<hr>";
+}
+
+$file3 = fopen("values.txt","a");
+
+/*foreach($exploded as $line){
+  //$trimmed_array=array_map('trim',explode(',',$line));
+  fputcsv($file3,$trimmed_array);
+}*/
+  
+fclose($file3);
+
+?>
